@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="仕入れ計算">
+<title>仕入れ価格計算 — EL CIELO</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f5f2;
+    --surface: #ffffff;
+    --surface2: #f0ede8;
+    --border: #e2ddd6;
+    --border2: #ccc7be;
+    --text: #1a1816;
+    --text2: #6b6560;
+    --text3: #9e9890;
+    --accent: #c8541a;
+    --accent-bg: #fdf1eb;
+    --accent-text: #8a3610;
+    --green: #2a7a4a;
+    --green-bg: #edf7f1;
+    --mono: 'DM Mono', monospace;
+    --sans: 'Noto Sans JP', sans-serif;
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 0 0 40px;
+  }
+
+  header {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .app-title {
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--text);
+  }
+
+  .app-sub {
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .section {
+    background: var(--surface);
+    margin: 12px 16px 0;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 14px 16px 8px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .rate-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 16px;
+  }
+
+  .rate-label {
+    font-size: 13px;
+    color: var(--text2);
+    flex: 1;
+  }
+
+  .rate-value {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .rate-note {
+    font-size: 11px;
+    color: var(--text3);
+    padding: 0 16px 12px;
+  }
+
+  input[type="number"] {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    outline: none;
+    -moz-appearance: textfield;
+    appearance: textfield;
+    transition: border-color 0.15s;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+  input[type="number"]:focus {
+    border-color: var(--accent);
+    background: var(--surface);
+  }
+
+  .unit {
+    font-size: 13px;
+    color: var(--text2);
+    white-space: nowrap;
+  }
+
+  .input-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+
+  .input-cell {
+    padding: 14px 16px;
+  }
+
+  .input-cell:first-child {
+    border-right: 1px solid var(--border);
+  }
+
+  .input-cell-label {
+    font-size: 11px;
+    color: var(--text3);
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+
+  .input-cell-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .input-cell-row input {
+    flex: 1;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .input-hint {
+    font-size: 11px;
+    color: var(--text3);
+    margin-top: 5px;
+  }
+
+  .slider-section {
+    padding: 16px 16px 14px;
+  }
+
+  .slider-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .slider-label {
+    font-size: 13px;
+    color: var(--text2);
+  }
+
+  .slider-val {
+    font-family: var(--mono);
+    font-size: 26px;
+    font-weight: 500;
+    color: var(--accent);
+  }
+
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 3px solid var(--surface);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    cursor: pointer;
+  }
+
+  input[type="range"]::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 3px solid var(--surface);
+    cursor: pointer;
+  }
+
+  .presets {
+    display: flex;
+    gap: 6px;
+    margin-top: 12px;
+  }
+
+  .preset-btn {
+    flex: 1;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text2);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 4px;
+    cursor: pointer;
+    transition: all 0.12s;
+    text-align: center;
+  }
+
+  .preset-btn:active, .preset-btn.active {
+    background: var(--accent-bg);
+    border-color: var(--accent);
+    color: var(--accent-text);
+  }
+
+  .results-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .result-cell {
+    padding: 14px 12px;
+    text-align: center;
+  }
+
+  .result-cell:not(:last-child) {
+    border-right: 1px solid var(--border);
+  }
+
+  .result-cell.featured {
+    background: var(--accent-bg);
+  }
+
+  .result-cell-label {
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .result-cell.featured .result-cell-label {
+    color: var(--accent-text);
+  }
+
+  .result-cell-value {
+    font-family: var(--mono);
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .result-cell.featured .result-cell-value {
+    font-size: 18px;
+    color: var(--accent);
+  }
+
+  .result-cell.profit .result-cell-value {
+    color: var(--green);
+  }
+
+  .table-wrap {
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead th {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text3);
+    background: var(--surface2);
+    padding: 10px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  thead th:not(:first-child) {
+    text-align: right;
+  }
+
+  tbody td {
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text2);
+  }
+
+  tbody td:not(:first-child) {
+    text-align: right;
+    font-family: var(--mono);
+  }
+
+  tbody tr.active-row td {
+    background: var(--accent-bg);
+    color: var(--accent-text);
+    font-weight: 500;
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  .formula-note {
+    font-size: 11px;
+    color: var(--text3);
+    line-height: 1.7;
+    padding: 14px 16px;
+  }
+
+  .check-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  @media (max-width: 360px) {
+    .result-cell-value { font-size: 13px; }
+    .result-cell.featured .result-cell-value { font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header>
+    <div class="header-inner">
+      <span class="app-title">仕入れ価格計算</span>
+      <span class="app-sub">EL CIELO</span>
+    </div>
+  </header>
+
+  <!-- レート -->
+  <div class="section" style="margin-top:16px;">
+    <div class="section-label">CNY / JPY レート</div>
+    <div class="rate-row">
+      <span class="rate-label">1元 =</span>
+      <div class="rate-value">
+        <input type="number" id="rate-input" min="10" max="50" step="0.01" value="23.00" style="width:80px;text-align:right;" oninput="calc()" />
+        <span class="unit">円</span>
+      </div>
+      <a class="check-link" href="https://www.google.com/search?q=CNY+JPY+為替レート" target="_blank">確認 ↗</a>
+    </div>
+    <div class="rate-note">Googleで最新レートを確認してから入力してください</div>
+  </div>
+
+  <!-- 仕入れ価格 -->
+  <div class="section">
+    <div class="section-label">仕入れ価格</div>
+    <div class="input-grid">
+      <div class="input-cell">
+        <div class="input-cell-label">タオバオ価格</div>
+        <div class="input-cell-row">
+          <input type="number" id="cny-input" min="0" step="1" value="500" oninput="calc()" />
+          <span class="unit">元</span>
+        </div>
+        <div class="input-hint" id="cny-jpy">≈ ¥11,500</div>
+      </div>
+      <div class="input-cell">
+        <div class="input-cell-label">その他費用</div>
+        <div class="input-cell-row">
+          <input type="number" id="extra-input" min="0" step="100" value="0" oninput="calc()" />
+          <span class="unit">円</span>
+        </div>
+        <div class="input-hint">送料・関税など</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 利益率スライダー -->
+  <div class="section">
+    <div class="section-label">目標利益率</div>
+    <div class="slider-section">
+      <div class="slider-header">
+        <span class="slider-label">利益率（売上比）</span>
+        <span class="slider-val" id="margin-val">50%</span>
+      </div>
+      <input type="range" id="margin-slider" min="5" max="90" step="1" value="50" oninput="syncMargin();calc()" />
+      <div class="presets">
+        <button class="preset-btn" onclick="setPreset(30)">30%</button>
+        <button class="preset-btn" onclick="setPreset(40)">40%</button>
+        <button class="preset-btn active" id="p50" onclick="setPreset(50)">50%</button>
+        <button class="preset-btn" onclick="setPreset(60)">60%</button>
+        <button class="preset-btn" onclick="setPreset(70)">70%</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 結果 -->
+  <div class="section">
+    <div class="section-label">計算結果</div>
+    <div class="results-grid">
+      <div class="result-cell">
+        <div class="result-cell-label">総原価</div>
+        <div class="result-cell-value" id="cost-out">¥11,500</div>
+      </div>
+      <div class="result-cell featured">
+        <div class="result-cell-label">販売価格</div>
+        <div class="result-cell-value" id="price-out">¥23,000</div>
+      </div>
+      <div class="result-cell profit">
+        <div class="result-cell-label">利益額</div>
+        <div class="result-cell-value" id="profit-out">¥11,500</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 比較表 -->
+  <div class="section">
+    <div class="section-label">利益率別・一覧</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>利益率</th>
+            <th>販売価格</th>
+            <th>利益額</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 計算式 -->
+  <div class="section">
+    <div class="formula-note">
+      販売価格 = 総原価 ÷ (1 − 利益率)<br>
+      利益率 = 利益 ÷ 販売価格（売上利益率ベース）
+    </div>
+  </div>
+
+</div>
+
+<script>
+const PRESETS = [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80];
+const PRESET_BTNS = [30, 40, 50, 60, 70];
+
+function setPreset(v) {
+  document.getElementById('margin-slider').value = v;
+  syncMargin();
+  calc();
+}
+
+function syncMargin() {
+  const v = parseInt(document.getElementById('margin-slider').value);
+  document.getElementById('margin-val').textContent = v + '%';
+  PRESET_BTNS.forEach(p => {
+    const btn = document.querySelector(`.preset-btn[onclick="setPreset(${p})"]`);
+    if (btn) btn.classList.toggle('active', p === v);
+  });
+}
+
+function calc() {
+  const rate = parseFloat(document.getElementById('rate-input').value) || 23.00;
+  const cny  = parseFloat(document.getElementById('cny-input').value) || 0;
+  const extra = parseFloat(document.getElementById('extra-input').value) || 0;
+  const marginPct = parseInt(document.getElementById('margin-slider').value);
+  const margin = marginPct / 100;
+
+  const costJpy = cny * rate + extra;
+  const price = costJpy / (1 - margin);
+  const profit = price - costJpy;
+
+  document.getElementById('cny-jpy').textContent = '≈ ¥' + Math.round(cny * rate).toLocaleString('ja-JP');
+  document.getElementById('cost-out').textContent  = '¥' + Math.round(costJpy).toLocaleString('ja-JP');
+  document.getElementById('price-out').textContent = '¥' + Math.round(price).toLocaleString('ja-JP');
+  document.getElementById('profit-out').textContent = '¥' + Math.round(profit).toLocaleString('ja-JP');
+
+  const tbody = document.getElementById('table-body');
+  tbody.innerHTML = PRESETS.map(p => {
+    const pr = costJpy / (1 - p / 100);
+    const pf = pr - costJpy;
+    const isActive = p === marginPct;
+    return `<tr class="${isActive ? 'active-row' : ''}">
+      <td>${p}%${isActive ? ' ◀' : ''}</td>
+      <td>¥${Math.round(pr).toLocaleString('ja-JP')}</td>
+      <td>¥${Math.round(pf).toLocaleString('ja-JP')}</td>
+    </tr>`;
+  }).join('');
+}
+
+calc();
+</script>
+</body>
+</html>
